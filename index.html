@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歐陽修誨學文言文互動學習網頁</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Font Awesome 用於圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 自定義滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8; /* 淺藍灰色背景 */
+        }
+
+        /* 句子點擊效果 */
+        .sentence-span {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            display: inline-block; /* Make span behave like block for padding/margin but stay inline */
+            margin-bottom: 4px; /* Space out lines */
+        }
+        .sentence-span:hover {
+            background-color: #e2e8f0; /* 淺灰色懸停背景 */
+            transform: translateY(-1px);
+        }
+        .sentence-span.active {
+            background-color: #bfdbfe; /* 淺藍色活躍背景 */
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 遊戲卡片效果 */
+        .game-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* 遊戲按鈕樣式 */
+        .game-button {
+            background-color: #6366f1; /* 藍色 */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 添加陰影 */
+        }
+        .game-button:hover {
+            background-color: #4f46e5; /* 稍深的藍色 */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* 懸停時陰影更大 */
+        }
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .game-button.selected {
+            background-color: #fde047; /* 亮黃色 */
+            color: #4f46e5;
+            border: 2px solid #fbbf24;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .game-button.correct {
+            background-color: #86efac; /* 淺綠色 */
+            color: #166534;
+            border: 2px solid #4ade80;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .game-button.incorrect {
+            background-color: #fca5a5; /* 淺紅色 */
+            color: #991b1b;
+            border: 2px solid #ef4444;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .game-button:disabled {
+            background-color: #cbd5e1; /* 禁用時的灰色 */
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* 遊戲類型選擇按鈕的特定樣式 */
+        .game-type-button {
+            background-color: #818cf8; /* 較淺的藍色 */
+            color: white;
+            padding: 1.5rem 1rem; /* 更大的觸摸目標 */
+            border-radius: 16px; /* 更圓的圓角 */
+            font-size: 1.25rem; /* 更大的字體 */
+            font-weight: 700;
+            text-align: center;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15); /* 更大的陰影 */
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative; /* For pseudo-elements or subtle effects */
+            overflow: hidden;
+        }
+
+        .game-type-button:hover {
+            background-color: #6366f1; /* 懸停時顏色加深 */
+            transform: translateY(-5px); /* 懸停時提升更多 */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); /* 懸停時陰影更深更大 */
+        }
+        .game-type-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 彈出視窗樣式 */
+        .modal {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* 半透明背景 */
+            backdrop-filter: blur(5px); /* 模糊背景 */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-header {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4f46e5;
+            margin-bottom: 1rem;
+        }
+        .modal-body {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        .modal-footer button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .modal-footer button:hover {
+            background-color: #4338ca;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive adjustments for panels and modal, keeping grid flexible */
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr; /* On small screens, stack columns */
+            }
+            .panel {
+                margin-bottom: 1.5rem; /* Add spacing between stacked panels */
+            }
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 標題 -->
+    <h1 class="text-4xl font-extrabold text-center text-indigo-700 mb-8 rounded-lg py-4 shadow-md bg-white">
+        歐陽修誨學文言文互動學習網頁
+    </h1>
+
+    <!-- 主要內容網格佈局 -->
+    <div class="main-grid grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+
+        <!-- 第一部分：原文顯示區 -->
+        <div class="panel bg-white p-6 rounded-xl shadow-lg md:col-span-1 overflow-y-auto max-h-[80vh]">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4 flex items-center">
+                <i class="fas fa-book-open mr-2"></i> 原文顯示區
+            </h2>
+            <div id="original-text" class="text-lg text-gray-800 leading-relaxed">
+                <!-- 原文內容將由 JavaScript 動態加載 -->
+            </div>
+        </div>
+
+        <!-- 第二部分：句子分析區 -->
+        <div class="panel bg-white p-6 rounded-xl shadow-lg md:col-span-1 overflow-y-auto max-h-[80vh]">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4 flex items-center">
+                <i class="fas fa-search-plus mr-2"></i> 句子分析區
+            </h2>
+            <div id="analysis-area" class="text-gray-700">
+                <p class="text-center text-gray-500 italic mt-8">
+                    點擊左側原文中的句子，即可在此處查看詳細分析。
+                </p>
+            </div>
+        </div>
+
+        <!-- 第三部分：互動遊戲區 -->
+        <div class="panel bg-white p-6 rounded-xl shadow-lg md:col-span-2 overflow-y-auto">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4 flex items-center">
+                <i class="fas fa-gamepad mr-2"></i> 互動遊戲區
+            </h2>
+            <div id="game-area" class="space-y-6 w-full">
+                <!-- 遊戲內容將由 JavaScript 動態加載 -->
+                <!-- 初始會顯示遊戲類型選擇按鈕 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 模態框用於顯示遊戲結果或提示 -->
+    <div id="message-modal" class="modal flex">
+        <div class="modal-content">
+            <div class="modal-header" id="modal-header"></div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button id="modal-close-btn">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模態框操作函數
+        const messageModal = document.getElementById('message-modal');
+        const modalHeader = document.getElementById('modal-header');
+        const modalBody = document.getElementById('modal-body');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // 強制隱藏模態框：在腳本加載時就確保它是隱藏的
+        messageModal.style.display = 'none';
+
+        /**
+         * 顯示提示訊息模態框
+         * @param {string} header 模態框標題
+         * @param {string} body 模態框內容
+         * @param {function} onCloseCallback 關閉模態框後執行的回調函數 (可選)
+         */
+        function showMessage(header, body, onCloseCallback = null) {
+            modalHeader.textContent = header;
+            modalBody.textContent = body;
+            messageModal.style.display = 'flex'; // 顯示模態框
+
+            const closeHandler = () => {
+                messageModal.style.display = 'none'; // 隱藏模態框
+                modalCloseBtn.removeEventListener('click', closeHandler); // 移除事件監聽器
+                if (onCloseCallback) {
+                    onCloseCallback(); // 執行回調
+                }
+            };
+            // 每次顯示模態框時，重新添加事件監聽器，以確保只執行一次
+            modalCloseBtn.removeEventListener('click', closeHandler); // 避免重複添加
+            modalCloseBtn.addEventListener('click', closeHandler);
+        }
+
+        // 歐陽修誨學原文及分析數據
+        const textData = [
+            {
+                sentence: "玉不琢，不成器，人不學，不知道。",
+                translation: "(如果)玉不雕刻，(就)不能成為有用的器具；(如果)人不學習，(也就)不會懂得道理。",
+                words: [
+                    { word: "琢", explanation: "雕刻、雕琢。" },
+                    { word: "成器", explanation: "成為有用的器具。" },
+                    { word: "學", explanation: "學習。" },
+                    { word: "知道", explanation: "懂得道理、明事理。" }
+                ],
+                analysis: "此句以玉器為比喻，強調學習對於人成長的重要性，指出不學習則無法明事理，奠定全文主旨。",
+                rhetoric: "類比、排比、對偶"
+            },
+            {
+                sentence: "然玉之為物，有不變之常德，雖不琢以為器，而猶不害為玉也；",
+                translation: "然而玉這種東西，有(它)永恆不變的特性，即使不雕刻製作成為器物，但也還是玉，(它的特性)不會受到損傷。",
+                words: [
+                    { word: "然", explanation: "然而、但是。" },
+                    { word: "之為物", explanation: "作為一種東西。" },
+                    { word: "常德", explanation: "永恆不變的本質或特性。" },
+                    { word: "雖", explanation: "即使、雖然。" },
+                    { word: "以為", explanation: "作為、成為。" },
+                    { word: "猶", explanation: "仍然、還是。" },
+                    { word: "不害", explanation: "不損害、不妨礙。" },
+                    { word: "也", explanation: "語氣助詞，表示判斷或肯定。" }
+                ],
+                analysis: "此句轉折，指出玉的本質不因是否雕琢而改變，為下文對比人的本性做鋪墊。",
+                rhetoric: "轉折、對比（與人對比）"
+            },
+            {
+                sentence: "人之性，因物則遷，不學，則舍君子而為小人，可不念哉？",
+                translation: "人的本性，受到外界事物的影響就會發生變化。(因此，人們如果)不學習，就會失去君子的高尚品德從而變成品行惡劣的小人，難道這不值得我們深思嗎？",
+                words: [
+                    { word: "性", explanation: "本性、天性。" },
+                    { word: "因物則遷", explanation: "受到外界事物影響就會發生變化。因：順著、隨著。物：外物。遷：改變、變化。" },
+                    { word: "舍", explanation: "捨棄、失去。" },
+                    { word: "君子", explanation: "品德高尚的人。" },
+                    { word: "小人", explanation: "品行惡劣的人。" },
+                    { word: "可不念哉", explanation: "難道這不值得深思嗎？可：豈、難道。念：思考、深思。哉：語氣助詞，表示反詰。" }
+                ],
+                analysis: "此句是全文核心，點明人的本性會受環境影響而改變，強調不學習可能導致品德敗壞，以反問句加強警示效果。",
+                rhetoric: "反問、對比（君子與小人）、條件複句"
+            }
+        ];
+
+        // 遊戲數據
+        const gameData = [
+            // 1. 詞義連線（wordMatch）
+            {
+                id: "wm1", type: "wordMatch", question: "「玉不琢，不成器」中的「琢」字，解釋最接近的是？",
+                options: [{text: "打磨", isCorrect: false}, {text: "雕刻", isCorrect: true}, {text: "摔碎", isCorrect: false}],
+                explanation: "「琢」指對玉石進行雕刻、雕琢。"
+            },
+            {
+                id: "wm2", type: "wordMatch", question: "「人不學，不知道」中的「知道」最接近的意思是？",
+                options: [{text: "認識道路", isCorrect: false}, {text: "懂得道理", isCorrect: true}, {text: "知曉消息", isCorrect: false}],
+                explanation: "「知道」在文言文中指懂得事理，明辨是非。"
+            },
+            {
+                id: "wm3", type: "wordMatch", question: "「然玉之為物」中的「然」字，解釋最接近的是？",
+                options: [{text: "然後", isCorrect: false}, {text: "但是，然而", isCorrect: true}, {text: "當然", isCorrect: false}],
+                explanation: "「然」在此作轉折連詞，表示與上文語氣相反，意為「但是」、「然而」。"
+            },
+            {
+                id: "wm4", type: "wordMatch", question: "「有不變之常德」中的「常德」是指？",
+                options: [{text: "日常道德", isCorrect: false}, {text: "永恆不變的特性", isCorrect: true}, {text: "普通品德", isCorrect: false}],
+                explanation: "「常德」指事物固有的、永恆不變的本質或特性。"
+            },
+            {
+                id: "wm5", type: "wordMatch", question: "「雖不琢以為器」中的「以為」解釋最接近的是？",
+                options: [{text: "認為", isCorrect: false}, {text: "作為，成為", isCorrect: true}, {text: "打算", isCorrect: false}],
+                explanation: "「以為」是「把……作為」或「成為」的意思。"
+            },
+            {
+                id: "wm6", type: "wordMatch", question: "「而猶不害為玉也」中的「猶」字，解釋最接近的是？",
+                options: [{text: "好像", isCorrect: false}, {text: "仍然，還是", isCorrect: true}, {text: "尤其", isCorrect: false}],
+                explanation: "「猶」是副詞，表示「仍然」、「還是」的意思。"
+            },
+            {
+                id: "wm7", type: "wordMatch", question: "「人之性，因物則遷」中的「遷」字，解釋最接近的是？",
+                options: [{text: "遷移", isCorrect: false}, {text: "變化，改變", isCorrect: true}, {text: "傳遞", isCorrect: false}],
+                explanation: "「遷」指事物因受到影響而發生變化、改變。"
+            },
+            {
+                id: "wm8", type: "wordMatch", question: "「不學，則舍君子而為小人」中的「舍」字，解釋最接近的是？",
+                options: [{text: "房屋", isCorrect: false}, {text: "捨棄，失去", isCorrect: true}, {text: "居住", isCorrect: false}],
+                explanation: "「舍」通「捨」，意為「捨棄」、「失去」。"
+            },
+            {
+                id: "wm9", type: "wordMatch", question: "「可不念哉？」中的「念」字，解釋最接近的是？",
+                options: [{text: "思念", isCorrect: false}, {text: "思考，深思", isCorrect: true}, {text: "朗讀", isCorrect: false}],
+                explanation: "「念」在此處意為「思考」、「深思」，指對問題進行深入的考慮。"
+            },
+            {
+                id: "wm10", type: "wordMatch", question: "「可不念哉？」中的「哉」字，最主要的語氣作用是？",
+                options: [{text: "感嘆", isCorrect: false}, {text: "疑問，反詰", isCorrect: true}, {text: "祈使", isCorrect: false}],
+                explanation: "「哉」作語氣助詞，常與「可不」連用，表示反詰語氣，強調應當如此。"
+            },
+            {
+                id: "wm11", type: "wordMatch", question: "「不害為玉也」中的「不害」解釋最接近的是？",
+                options: [{text: "沒有傷害", isCorrect: false}, {text: "不妨礙，不損害", isCorrect: true}, {text: "沒有危險", isCorrect: false}],
+                explanation: "「不害」在此處指「不損害其本質」，也就是不妨礙它作為玉的本質。"
+            },
+            {
+                id: "wm12", type: "wordMatch", question: "「因物則遷」中的「物」是指？",
+                options: [{text: "物品", isCorrect: false}, {text: "外界事物", isCorrect: true}, {text: "生物", isCorrect: false}],
+                explanation: "「物」在此處指「外界事物」或「客觀環境」，即對人產生影響的外部因素。"
+            },
+            {
+                id: "wm13", type: "wordMatch", question: "「之為物」中的「之」字，最接近的語法作用是？",
+                options: [{text: "結構助詞，的", isCorrect: false}, {text: "助詞，無實際意義，置於主謂之間", isCorrect: true}, {text: "代詞，它", isCorrect: false}],
+                explanation: "「之」在此處是助詞，置於主謂之間，取消句子的獨立性，使之成為偏正短語，無實際意義。"
+            },
+            {
+                id: "wm14", type: "wordMatch", question: "「君子」在文中是指哪種人？",
+                options: [{text: "國王或貴族", isCorrect: false}, {text: "品德高尚的人", isCorrect: true}, {text: "有學問的人", isCorrect: false}],
+                explanation: "在古文中，「君子」常指有道德、有修養、品格高尚的人。"
+            },
+            {
+                id: "wm15", type: "wordMatch", question: "「小人」在文中是指哪種人？",
+                options: [{text: "身份低下的人", isCorrect: false}, {text: "年紀小的人", isCorrect: false}, {text: "品行惡劣的人", isCorrect: true}],
+                explanation: "與「君子」相對，「小人」指道德敗壞、品行惡劣的人。"
+            },
+            {
+                id: "wm16", type: "wordMatch", question: "「玉不琢，不成器」這句話是比喻什麼？",
+                options: [{text: "玉的價值", isCorrect: false}, {text: "人需要學習才能成材", isCorrect: true}, {text: "玉石的加工過程", isCorrect: false}],
+                explanation: "這句話用玉不加工不能成為器物來比喻人若不經過學習，就不能成為有用之才或懂得道理。"
+            },
+            {
+                id: "wm17", type: "wordMatch", question: "文中「然」字的語法作用是？",
+                options: [{text: "名詞", isCorrect: false}, {text: "副詞", isCorrect: false}, {text: "連詞", isCorrect: true}],
+                explanation: "「然」在此處是連詞，表示轉折關係。"
+            },
+            {
+                id: "wm18", type: "wordMatch", question: "「不琢以為器」中的「不琢」指的是什麼？",
+                options: [{text: "不雕刻", isCorrect: true}, {text: "不需要雕刻", isCorrect: false}, {text: "不進行拋光", isCorrect: false}],
+                explanation: "「不琢」直接翻譯為「不雕刻」，指未經加工的狀態。"
+            },
+            {
+                id: "wm19", type: "wordMatch", question: "「人之性」中的「性」是指？",
+                options: [{text: "性別", isCorrect: false}, {text: "性格", isCorrect: false}, {text: "天性，本質", isCorrect: true}],
+                explanation: "「性」在古文中常指人的天性、本質或天賦。"
+            },
+            {
+                id: "wm20", type: "wordMatch", question: "「因物則遷」的「因」字，解釋最接近的是？",
+                options: [{text: "因為", isCorrect: false}, {text: "順著，隨著", isCorrect: true}, {text: "原因", isCorrect: false}],
+                explanation: "「因」在此處作介詞，表示「順著」、「隨著」外界事物而變化。"
+            },
+            {
+                id: "wm21", type: "wordMatch", question: "「不學，則舍君子而為小人」中的「則」字，解釋最接近的是？",
+                options: [{text: "規則", isCorrect: false}, {text: "就，那麼", isCorrect: true}, {text: "準則", isCorrect: false}],
+                explanation: "「則」在條件複句中作連詞，表示結果或判斷，意為「就」、「那麼」。"
+            },
+            {
+                id: "wm22", type: "wordMatch", question: "「不害為玉也」中的「為」字，解釋最接近的是？",
+                options: [{text: "做", isCorrect: false}, {text: "變成，作為", isCorrect: true}, {text: "為了", isCorrect: false}],
+                explanation: "「為」在此處作動詞，表示「變成」、「作為」的意思。"
+            },
+            {
+                id: "wm23", type: "wordMatch", question: "「不學」在此文中的核心含義是？",
+                options: [{text: "不去上學", isCorrect: false}, {text: "不進行修養和知識的學習", isCorrect: true}, {text: "沒有天賦", isCorrect: false}],
+                explanation: "文中強調的是對知識、道德和品格的修養和學習，而非單純的學校教育。"
+            },
+            {
+                id: "wm24", type: "wordMatch", question: "這篇文章的中心思想是什麼？",
+                options: [{text: "強調玉石的重要性", isCorrect: false}, {text: "說明後天學習對人格塑造的重要性", isCorrect: true}, {text: "探討人的本性是否固定", isCorrect: false}],
+                explanation: "文章通過玉與人的對比，闡明了後天學習對人的品德和發展至關重要，不學習則可能誤入歧途。"
+            },
+            {
+                id: "wm25", type: "wordMatch", question: "「不成器」這句話是對什麼的比喻？",
+                options: [{text: "玉石的形狀不好看", isCorrect: false}, {text: "人沒有用處或沒有成就", isCorrect: true}, {text: "工具損壞了", isCorrect: false}],
+                explanation: "這裡的「不成器」是比喻一個人沒有經過學習和培養，就不能成為有用的人才。"
+            },
+
+
+            // 2. 句子排序（sentenceReorder）
+            {
+                id: "sr1", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["不成器，", "玉不琢，", "不知道。", "人不學，"],
+                options: [
+                    {text: "玉不琢，不成器，人不學，不知道。", isCorrect: true},
+                    {text: "人不學，不知道。玉不琢，不成器，", isCorrect: false},
+                    {text: "不成器，玉不琢，不知道。人不學，", isCorrect: false}
+                ],
+                explanation: "原文為：「玉不琢，不成器，人不學，不知道。」"
+            },
+            {
+                id: "sr2", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["有不變之常德，", "然玉之為物，", "而猶不害為玉也；", "雖不琢以為器，"],
+                options: [
+                    {text: "然玉之為物，雖不琢以為器，有不變之常德，而猶不害為玉也；", isCorrect: false},
+                    {text: "然玉之為物，有不變之常德，雖不琢以為器，而猶不害為玉也；", isCorrect: true},
+                    {text: "雖不琢以為器，而猶不害為玉也；然玉之為物，有不變之常德，", isCorrect: false}
+                ],
+                explanation: "原文為：「然玉之為物，有不變之常德，雖不琢以為器，而猶不害為玉也；」"
+            },
+            {
+                id: "sr3", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["則舍君子而為小人，", "可不念哉？", "人之性，", "因物則遷，不學，"],
+                options: [
+                    {text: "人之性，不學，則舍君子而為小人，因物則遷，可不念哉？", isCorrect: false},
+                    {text: "人之性，因物則遷，不學，則舍君子而為小人，可不念哉？", isCorrect: true},
+                    {text: "因物則遷，不學，則舍君子而為小人，人之性，可不念哉？", isCorrect: false}
+                ],
+                explanation: "原文為：「人之性，因物則遷，不學，則舍君子而為小人，可不念哉？」"
+            },
+            {
+                id: "sr4", type: "sentenceReorder", question: "以下哪個選項是這段文章的正確開頭？",
+                scrambled: ["不知道。", "玉不琢，", "不成器，", "人不學，"],
+                options: [
+                    {text: "人不學，不知道。", isCorrect: false},
+                    {text: "玉不琢，不成器，", isCorrect: true},
+                    {text: "不成器，玉不琢，", isCorrect: false}
+                ],
+                explanation: "文章開頭為「玉不琢，不成器」。"
+            },
+            {
+                id: "sr5", type: "sentenceReorder", question: "這段文章第二句的正確順序是？",
+                scrambled: ["常德，", "然玉之為物，", "有不變之", "雖不琢以為器，而猶不害為玉也；"],
+                options: [
+                    {text: "然玉之為物，有不變之常德，雖不琢以為器，而猶不害為玉也；", isCorrect: true},
+                    {text: "有不變之常德，然玉之為物，雖不琢以為器，而猶不害為玉也；", isCorrect: false},
+                    {text: "雖不琢以為器，而猶不害為玉也；然玉之為物，有不變之常德，", isCorrect: false}
+                ],
+                explanation: "原文為：「然玉之為物，有不變之常德，雖不琢以為器，而猶不害為玉也；」"
+            },
+            {
+                id: "sr6", type: "sentenceReorder", question: "這段文章的結尾句的正確順序是？",
+                scrambled: ["則舍君子而為小人，", "可不念哉？", "不學，"],
+                options: [
+                    {text: "不學，則舍君子而為小人，可不念哉？", isCorrect: true},
+                    {text: "則舍君子而為小人，不學，可不念哉？", isCorrect: false},
+                    {text: "可不念哉？不學，則舍君子而為小人，", isCorrect: false}
+                ],
+                explanation: "文章結尾句為「不學，則舍君子而為小人，可不念哉？」"
+            },
+            {
+                id: "sr7", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["則遷，", "人之性，", "因物"],
+                options: [
+                    {text: "人之性，因物則遷，", isCorrect: true},
+                    {text: "因物則遷，人之性，", isCorrect: false},
+                    {text: "則遷，因物人之性，", isCorrect: false}
+                ],
+                explanation: "原文為：「人之性，因物則遷」"
+            },
+            {
+                id: "sr8", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["人", "學，", "不", "知道。"],
+                options: [
+                    {text: "人學，不知道。", isCorrect: false},
+                    {text: "人不學，不知道。", isCorrect: true},
+                    {text: "不知道。人不學，", isCorrect: false}
+                ],
+                explanation: "原文為：「人不學，不知道。」"
+            },
+            {
+                id: "sr9", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["以為器，", "不琢", "雖"],
+                options: [
+                    {text: "不琢雖以為器，", isCorrect: false},
+                    {text: "雖不琢以為器，", isCorrect: true},
+                    {text: "以為器，雖不琢", isCorrect: false}
+                ],
+                explanation: "原文為：「雖不琢以為器」"
+            },
+            {
+                id: "sr10", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["不害為玉也；", "而猶"],
+                options: [
+                    {text: "不害為玉也；而猶", isCorrect: false},
+                    {text: "而猶不害為玉也；", isCorrect: true},
+                    {text: "猶而為玉也；不害", isCorrect: false}
+                ],
+                explanation: "原文為：「而猶不害為玉也；」"
+            },
+            {
+                id: "sr11", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["君子而為小人，", "則舍"],
+                options: [
+                    {text: "君子而為小人，則舍", isCorrect: false},
+                    {text: "則舍君子而為小人，", isCorrect: true},
+                    {text: "舍則君子而為小人，", isCorrect: false}
+                ],
+                explanation: "原文為：「則舍君子而為小人」"
+            },
+            {
+                id: "sr12", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["之為物，", "玉", "然"],
+                options: [
+                    {text: "然玉之為物，", isCorrect: true},
+                    {text: "玉然之為物，", isCorrect: false},
+                    {text: "之為物，然玉", isCorrect: false}
+                ],
+                explanation: "原文為：「然玉之為物」"
+            },
+            {
+                id: "sr13", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["有不變之常德"],
+                options: [
+                    {text: "有不變之常德", isCorrect: true},
+                    {text: "不變之常德有", isCorrect: false},
+                    {text: "常德有不變之", isCorrect: false}
+                ],
+                explanation: "原文為：「有不變之常德」"
+            },
+            {
+                id: "sr14", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["因物則遷，", "人之性，"],
+                options: [
+                    {text: "人之性，因物則遷，", isCorrect: true},
+                    {text: "因物則遷，人之性，", isCorrect: false},
+                    {text: "則遷，因物人之性，", isCorrect: false}
+                ],
+                explanation: "原文為：「人之性，因物則遷」"
+            },
+            {
+                id: "sr15", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["知道。", "不學，"],
+                options: [
+                    {text: "不學，知道。", isCorrect: false},
+                    {text: "不學，不知道。", isCorrect: true},
+                    {text: "知道。不學，", isCorrect: false}
+                ],
+                explanation: "原文為：「不學，不知道。」"
+            },
+            {
+                id: "sr16", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["則舍君子", "而為小人，"],
+                options: [
+                    {text: "而為小人，則舍君子", isCorrect: false},
+                    {text: "則舍君子而為小人，", isCorrect: true},
+                    {text: "君子則舍而為小人，", isCorrect: false}
+                ],
+                explanation: "原文為：「則舍君子而為小人」"
+            },
+            {
+                id: "sr17", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["可不念哉？"],
+                options: [
+                    {text: "可不念哉？", isCorrect: true},
+                    {text: "念哉？可不", isCorrect: false},
+                    {text: "不念哉？可", isCorrect: false}
+                ],
+                explanation: "原文為：「可不念哉？」"
+            },
+            {
+                id: "sr18", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["為物，", "玉之"],
+                options: [
+                    {text: "為物，玉之", isCorrect: false},
+                    {text: "玉之為物，", isCorrect: true},
+                    {text: "之為物，玉", isCorrect: false}
+                ],
+                explanation: "原文為：「玉之為物」"
+            },
+            {
+                id: "sr19", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["有不變", "之常德，"],
+                options: [
+                    {text: "有不變之常德，", isCorrect: true},
+                    {text: "之常德，有不變", isCorrect: false},
+                    {text: "不變有之常德，", isCorrect: false}
+                ],
+                explanation: "原文為：「有不變之常德」"
+            },
+            {
+                id: "sr20", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["以為器，", "雖不琢"],
+                options: [
+                    {text: "雖不琢以為器，", isCorrect: true},
+                    {text: "以為器，雖不琢", isCorrect: false},
+                    {text: "不琢雖以為器，", isCorrect: false}
+                ],
+                explanation: "原文為：「雖不琢以為器」"
+            },
+            {
+                id: "sr21", type: "sentenceReorder", question: "請選出正確的句子順序：",
+                scrambled: ["而猶不害為玉也；"],
+                options: [
+                    {text: "而猶不害為玉也；", isCorrect: true},
+                    {text: "不害而猶為玉也；", isCorrect: false},
+                    {text: "為玉也；而猶不害", isCorrect: false}
+                ],
+                explanation: "原文為：「而猶不害為玉也；」"
+            },
+
+
+            // 3. 文意選擇題（multipleChoice）
+            {
+                id: "mc1", type: "multipleChoice", question: "「玉不琢，不成器，人不學，不知道。」這句話說明了什麼？",
+                options: [
+                    {text: "玉器製作很困難", isCorrect: false},
+                    {text: "學習對人的重要性", isCorrect: true},
+                    {text: "人天生就懂得所有道理", isCorrect: false}
+                ],
+                explanation: "這句話強調了學習和磨練對於人成材的重要性，如同玉石需要雕琢才能成器。"
+            },
+            {
+                id: "mc2", type: "multipleChoice", question: "文章開頭將「玉」與「人」進行對比，其主要目的是什麼？",
+                options: [
+                    {text: "說明玉石的珍貴", isCorrect: false},
+                    {text: "引出學習對人本性塑造的影響", isCorrect: true},
+                    {text: "證明人不如玉石堅固", isCorrect: false}
+                ],
+                explanation: "作者通過對比玉的「不變之常德」與人的「因物則遷」，來強調人若不學習，本性就會受到外界不良影響而改變，從而引出學習的重要性。"
+            },
+            {
+                id: "mc3", type: "multipleChoice", question: "文中「人之性，因物則遷」這句話，最想表達人的本性會怎樣？",
+                options: [
+                    {text: "固定不變", isCorrect: false},
+                    {text: "受外界影響而改變", isCorrect: true},
+                    {text: "與生俱來就是善良的", isCorrect: false}
+                ],
+                explanation: "「因物則遷」明確指出人的本性會受到外界環境或事物的影響而發生變化，強調了後天環境和學習的重要性。"
+            },
+            {
+                id: "mc4", type: "multipleChoice", question: "作者說「不學，則舍君子而為小人」，意在警示人們什麼？",
+                options: [
+                    {text: "不讀書會變窮", isCorrect: false},
+                    {text: "不學習會使品德敗壞", isCorrect: true},
+                    {text: "不學習就沒有朋友", isCorrect: false}
+                ],
+                explanation: "這句話直接點明不學習的後果，是人會喪失君子的品德，淪為品行惡劣的小人，強調了學習對品德修養的決定性作用。"
+            },
+            {
+                id: "mc5", type: "multipleChoice", question: "「可不念哉？」這句話屬於何種修辭手法？",
+                options: [
+                    {text: "設問", isCorrect: false},
+                    {text: "反問", isCorrect: true},
+                    {text: "感嘆", isCorrect: false}
+                ],
+                explanation: "這句話以疑問的形式表達肯定的意思，用來加強語氣，引起讀者深思，是典型的反問句。"
+            },
+            {
+                id: "mc6", type: "multipleChoice", question: "歐陽修寫這篇文章的最終目的，最可能是想告訴讀者什麼？",
+                options: [
+                    {text: "玉的保養方法", isCorrect: false},
+                    {text: "要重視學習和修身", isCorrect: true},
+                    {text: "君子和小人的區別", isCorrect: false}
+                ],
+                explanation: "全文圍繞「學」的重要性展開，通過玉與人的對比，旨在勸誡人們要不斷學習，修養品德，避免淪為小人。"
+            },
+            {
+                id: "mc7", type: "multipleChoice", question: "文中玉的「不變之常德」與人的「因物則遷」形成了何種關係？",
+                options: [
+                    {text: "因果關係", isCorrect: false},
+                    {text: "並列關係", isCorrect: false},
+                    {text: "對比關係", isCorrect: true}
+                ],
+                explanation: "玉的本性不變與人的本性會變動形成鮮明對比，這是作者論證學習重要性的基礎。"
+            },
+            {
+                id: "mc8", type: "multipleChoice", question: "文章中沒有提及下列哪一項關於學習的內容？",
+                options: [
+                    {text: "學習能讓人懂得道理", isCorrect: false},
+                    {text: "不學習會使人品行變壞", isCorrect: false},
+                    {text: "學習可以帶來財富", isCorrect: true}
+                ],
+                explanation: "文章主要從品德和智慧的角度闡述學習的重要性，並未提及學習與財富的直接關係。"
+            },
+            {
+                id: "mc9", type: "multipleChoice", question: "這篇文章的寫作手法主要運用了什麼？",
+                options: [
+                    {text: "情景描寫", isCorrect: false},
+                    {text: "夾敘夾議", isCorrect: false},
+                    {text: "比喻論證與對比論證", isCorrect: true}
+                ],
+                explanation: "文章開頭以「玉不琢不成器」作比喻，隨後將玉與人的特性進行對比，以此來論證學習的重要性，屬於比喻論證與對比論證。"
+            },
+            {
+                id: "mc10", type: "multipleChoice", question: "「不學，則舍君子而為小人」中的「而」字，語法作用是什麼？",
+                options: [
+                    {text: "表示並列", isCorrect: true},
+                    {text: "表示轉折", isCorrect: false},
+                    {text: "表示因果", isCorrect: false}
+                ],
+                explanation: "「而」在此處連接「舍君子」和「為小人」，表示並列關係，即失去君子品德同時也成為小人。"
+            },
+            {
+                id: "mc11", type: "multipleChoice", question: "這篇文章從開頭到結尾的論證思路是？",
+                options: [
+                    {text: "先提出結論，再舉例證明", isCorrect: false},
+                    {text: "從玉的特性引入，再對比人的本性，最終強調學習重要性", isCorrect: true},
+                    {text: "先批判不學之人，再讚揚學習之功", isCorrect: false}
+                ],
+                explanation: "文章先以玉設喻，引出學習的重要性，接著通過對比玉與人本性的不同，最終警示不學習的嚴重後果，強調深思，層層遞進。"
+            },
+            {
+                id: "mc12", type: "multipleChoice", question: "「玉不琢，不成器」這句話強調了什麼？",
+                options: [
+                    {text: "天賦的重要性", isCorrect: false},
+                    {text: "後天培養和雕琢的重要性", isCorrect: true},
+                    {text: "自然狀態的美", isCorrect: false}
+                ],
+                explanation: "這句話旨在說明即使是天賦再好的玉，也需要經過後天的雕琢才能成為有用的器具，比喻人也需要後天學習才能成才。"
+            },
+            {
+                id: "mc13", type: "multipleChoice", question: "文章中「君子」與「小人」這兩個詞，主要表達的是？",
+                options: [
+                    {text: "社會地位的高低", isCorrect: false},
+                    {text: "性格內向與外向", isCorrect: false},
+                    {text: "道德品行的優劣", isCorrect: true}
+                ],
+                explanation: "在文中，君子指品德高尚的人，小人指品行惡劣的人，主要體現的是道德品行的差異。"
+            },
+            {
+                id: "mc14", type: "multipleChoice", question: "下列哪句話最能概括本文的中心觀點？",
+                options: [
+                    {text: "玉是珍貴的。", isCorrect: false},
+                    {text: "人的本性是多變的。", isCorrect: false},
+                    {text: "人必須學習才能修養品德，懂得道理。", isCorrect: true}
+                ],
+                explanation: "文章的核心思想是強調學習對於人的品德修養和明事理的重要性。"
+            },
+            {
+                id: "mc15", type: "multipleChoice", question: "文章開頭提到的「器」主要指什麼？",
+                options: [
+                    {text: "工具", isCorrect: false},
+                    {text: "有用之才或有用之物", isCorrect: true},
+                    {text: "禮器", isCorrect: false}
+                ],
+                explanation: "這裡的「器」泛指有特定功能或價值的器物，引申為有用之才或能夠承擔重任的人。"
+            },
+
+
+            // 4. 詞語配對（pairing）
+            {
+                id: "p1", type: "pairing", question: "「玉不琢」：與之相對應的「人」的行為是？",
+                options: [
+                    {text: "不做事", isCorrect: false},
+                    {text: "不學習", isCorrect: true},
+                    {text: "不思考", isCorrect: false}
+                ],
+                explanation: "文中「玉不琢」對應「人不學」，強調學習如同雕琢玉石一般重要。"
+            },
+            {
+                id: "p2", type: "pairing", question: "「不成器」：與之相對應的「人」的結果是？",
+                options: [
+                    {text: "沒有成就，不懂道理", isCorrect: true},
+                    {text: "沒有朋友", isCorrect: false},
+                    {text: "沒有財富", isCorrect: false}
+                ],
+                explanation: "「不成器」與「不知道」相對，指人沒有經過學習培養，就不能成為有用之才，不懂得道理。"
+            },
+            {
+                id: "p3", type: "pairing", question: "「玉之為物，有不變之常德」：與之形成對比的是人的何種特性？",
+                options: [
+                    {text: "長壽", isCorrect: false},
+                    {text: "因物則遷（受外界影響而改變）", isCorrect: true},
+                    {text: "善良", isCorrect: false}
+                ],
+                explanation: "玉的「不變之常德」與人的「因物則遷」形成對比，凸顯人本性需要後天培養。"
+            },
+            {
+                id: "p4", type: "pairing", question: "「君子」：與之相對應的負面品行是？",
+                options: [
+                    {text: "聰明", isCorrect: false},
+                    {text: "小人", isCorrect: true},
+                    {text: "平凡", isCorrect: false}
+                ],
+                explanation: "「君子」指品德高尚者，「小人」指品行惡劣者，二者形成對比。"
+            },
+            {
+                id: "p5", type: "pairing", question: "「不學」：導致的直接後果是？",
+                options: [
+                    {text: "無法明辨是非，品德敗壞", isCorrect: true},
+                    {text: "身體不健康", isCorrect: false},
+                    {text: "無法找到工作", isCorrect: false}
+                ],
+                explanation: "文中明確指出「不學，則舍君子而為小人」，即不學習會導致品德敗壞。"
+            },
+            {
+                id: "p6", type: "pairing", question: "這篇文章的作者是？",
+                options: [
+                    {text: "韓愈", isCorrect: false},
+                    {text: "歐陽修", isCorrect: true},
+                    {text: "蘇軾", isCorrect: false}
+                ],
+                explanation: "文章標題即為「歐陽修誨學」，作者是歐陽修。"
+            },
+            {
+                id: "p7", type: "pairing", question: "「可不念哉？」的語氣與以下哪項相似？",
+                options: [
+                    {text: "真美啊！", isCorrect: false},
+                    {text: "難道不值得我們深思嗎？", isCorrect: true},
+                    {text: "請你記住！", isCorrect: false}
+                ],
+                explanation: "這是一個反問句，意在引起讀者深思，強調應當深思的意思。"
+            },
+            {
+                id: "p8", type: "pairing", question: "「玉不琢，不成器」這句話是比喻人的什麼？",
+                options: [
+                    {text: "人需經過磨練才能成才", isCorrect: true},
+                    {text: "人天生完美", isCorrect: false},
+                    {text: "人需要玉石來裝飾", isCorrect: false}
+                ],
+                explanation: "這句話是經典的比喻，說明人也需要學習和培養才能成為有用之才。"
+            },
+            {
+                id: "p9", type: "pairing", question: "文中玉的特性「不變之常德」是指？",
+                options: [
+                    {text: "玉的硬度", isCorrect: false},
+                    {text: "玉的天然品質和本質", isCorrect: true},
+                    {text: "玉的重量", isCorrect: false}
+                ],
+                explanation: "「不變之常德」強調的是玉本身固有的、不會因外力而改變的天然品質和本質。"
+            },
+            {
+                id: "p10", type: "pairing", question: "「因物則遷」的「因」屬於哪種詞性？",
+                options: [
+                    {text: "動詞", isCorrect: false},
+                    {text: "介詞", isCorrect: true},
+                    {text: "名詞", isCorrect: false}
+                ],
+                explanation: "「因」在此處引介原因或條件，屬於介詞，表示「順著」、「隨著」。"
+            },
+            {
+                id: "p11", type: "pairing", question: "文章中「不知『道』」的「道」是指？",
+                options: [
+                    {text: "道路", isCorrect: false},
+                    {text: "真理、道理、為人處世的原則", isCorrect: true},
+                    {text: "道教", isCorrect: false}
+                ],
+                explanation: "這裡的「道」指為人處世的道理、原則或事物的規律。"
+            },
+            {
+                id: "p12", type: "pairing", question: "這篇文章主要表達了對教育的什麼看法？",
+                options: [
+                    {text: "教育是次要的", isCorrect: false},
+                    {text: "教育對於人的發展和品德培養至關重要", isCorrect: true},
+                    {text: "教育應順其自然", isCorrect: false}
+                ],
+                explanation: "文章核心思想是強調教育和學習對於人的品德和明事理至關重要，是積極主動的教育觀點。"
+            },
+            {
+                id: "p13", type: "pairing", question: "「不成『器』」的「器」字，在文中與下列哪一項含義接近？",
+                options: [
+                    {text: "工具", isCorrect: false},
+                    {text: "有才能的人", isCorrect: true},
+                    {text: "盛裝物品的容器", isCorrect: false}
+                ],
+                explanation: "這裡的「器」引申為有用之才、能夠擔當重任的人。"
+            },
+            {
+                id: "p14", type: "pairing", question: "「雖不琢以為器」中的「雖」是表示何種關係的連詞？",
+                options: [
+                    {text: "並列", isCorrect: false},
+                    {text: "轉折或假設", isCorrect: true},
+                    {text: "因果", isCorrect: false}
+                ],
+                explanation: "「雖」是表示讓步、轉折或假設的連詞，意為「即使」、「雖然」。"
+            },
+            {
+                id: "p15", type: "pairing", question: "「不害為玉也」的「也」字，語氣作用是什麼？",
+                options: [
+                    {text: "疑問", isCorrect: false},
+                    {text: "感嘆", isCorrect: false},
+                    {text: "判斷或肯定", isCorrect: true}
+                ],
+                explanation: "「也」在此句末作語氣助詞，表示判斷或肯定語氣。"
+            },
+
+
+            // 5. 是非判斷題（trueFalse）
+            {
+                id: "tf1", type: "trueFalse", question: "歐陽修認為人的本性如同玉石一樣，天生不變。",
+                answer: false,
+                explanation: "原文：「人之性，因物則遷」，歐陽修認為人的本性會受到外界影響而改變，與玉石的「不變之常德」形成對比。"
+            },
+            {
+                id: "tf2", type: "trueFalse", question: "「玉不琢，不成器」的「器」是指各種工具。",
+                answer: false,
+                explanation: "這裡的「器」泛指有用的器物，引申為有用之才，而非單指工具。"
+            },
+            {
+                id: "tf3", type: "trueFalse", question: "文中指出不學習會使人失去君子品德，淪為品行惡劣的小人。",
+                answer: true,
+                explanation: "原文：「不學，則舍君子而為小人」，明確表達了這一觀點。"
+            },
+            {
+                id: "tf4", type: "trueFalse", question: "作者認為玉即使不經雕琢，其本身的價值也不會受損。",
+                answer: true,
+                explanation: "原文：「雖不琢以為器，而猶不害為玉也」，明確了玉的本質不因是否雕琢而改變。"
+            },
+            {
+                id: "tf5", type: "trueFalse", question: "「可不念哉？」這句話是普通的疑問句，要求讀者回答。",
+                answer: false,
+                explanation: "這是一個反問句，意在加強語氣，引起讀者深思，而不是等待回答。"
+            },
+            {
+                id: "tf6", type: "trueFalse", question: "本文主要勸學，目的是鼓勵人們多讀書，考取功名。",
+                answer: false,
+                explanation: "本文勸學的目的更側重於個人品德的修養和明事理，而非僅僅是追求功名。"
+            },
+            {
+                id: "tf7", type: "trueFalse", question: "「因物則遷」中的「物」指的是人的慾望。",
+                answer: false,
+                explanation: "「物」在這裡指「外界事物」、「客觀環境」，泛指影響人的外部因素，不特指慾望。"
+            },
+            {
+                id: "tf8", type: "trueFalse", question: "歐陽修認為，只要有天賦，人就不需要學習也能成材。",
+                answer: false,
+                explanation: "作者強調「人不學，不知道」，表明即使有天賦，若不學習仍無法懂得道理、修養品德。"
+            },
+            {
+                id: "tf9", type: "trueFalse", question: "這篇文章開頭使用了比喻的修辭手法。",
+                answer: true,
+                explanation: "「玉不琢，不成器」是將人與玉作比喻，屬於比喻的修辭手法。"
+            },
+            {
+                id: "tf10", type: "trueFalse", question: "「不知道」指的是不認識路。",
+                answer: false,
+                explanation: "「不知道」是指不懂得道理、不明事理，而非不認識路。"
+            },
+            {
+                id: "tf11", type: "trueFalse", question: "文章中「君子」與「小人」的區別在於他們的財富多寡。",
+                answer: false,
+                explanation: "「君子」與「小人」的區別在於他們的道德品行，而非財富。"
+            },
+            {
+                id: "tf12", type: "trueFalse", question: "本文的寫作手法是先講道理，再舉例說明。",
+                answer: false,
+                explanation: "本文是先以「玉不琢，不成器」的比喻開頭，再展開論述，屬於先舉例（比喻），後論證的方式。"
+            },
+            {
+                id: "tf13", type: "trueFalse", question: "作者強調了學習對於保持人良好品德的重要性。",
+                answer: true,
+                explanation: "原文：「不學，則舍君子而為小人」，直接點明了學習與品德維繫的關係。"
+            },
+            {
+                id: "tf14", type: "trueFalse", question: "文章中的「遷」字意味著人的本性會隨著年齡增長而自然變得更好。",
+                answer: false,
+                explanation: "「遷」意為「變化、改變」，指受到外界影響而改變，這種改變可能向好也可能向壞，並非自然變好。"
+            },
+            {
+                id: "tf15", type: "trueFalse", question: "這篇文章的語言風格嚴謹，邏輯性強。",
+                answer: true,
+                explanation: "文章通過比喻、對比、設問等手法，層次分明地闡述觀點，說理透徹，邏輯性強。"
+            },
+            {
+                id: "tf16", type: "trueFalse", question: "「然玉之為物」中的「之」字可以替換成「的」。",
+                answer: false,
+                explanation: "此處的「之」是助詞，置於主謂之間，取消句子的獨立性，與結構助詞「的」語法功能不同。"
+            },
+            {
+                id: "tf17", type: "trueFalse", question: "「不學」後面的「則」表示假設關係。",
+                answer: true,
+                explanation: "「則」在「不學，則…」這樣的句式中，表示如果（假設）不學，那麼（結果）就會怎樣，是假設關係。"
+            },
+            {
+                id: "tf18", type: "trueFalse", question: "文章開頭的「玉」和「人」是完全相同的概念。",
+                answer: false,
+                explanation: "作者是將玉作為比喻對象，來說明人的學習問題，它們是類比關係，而不是完全相同的概念，其後文也強調了兩者的不同本質。"
+            },
+            {
+                id: "tf19", type: "trueFalse", question: "這篇短文旨在說明後天學習對人的塑造具有決定性作用。",
+                answer: true,
+                explanation: "這是本文的核心觀點，強調了後天學習對人品德、知識、能力形成的重要影響。"
+            },
+            {
+                id: "tf20", type: "trueFalse", question: "「可不念哉？」這句話表明作者對讀者是否思考該問題持懷疑態度。",
+                answer: false,
+                explanation: "這句話是反問，目的在於引導讀者去思考，而不是對讀者是否思考持懷疑態度，而是強調讀者必須深思。"
+            },
+            {
+                id: "tf21", type: "trueFalse", question: "「不害為玉也」說明玉即便不加工，也能發揮其最大效用。",
+                answer: false,
+                explanation: "「不害為玉也」說明玉的本質不變，但若不加工則無法成為「器」，無法發揮最大效用。它只是強調本質不變，並非效用不變。"
+            },
+            {
+                id: "tf22", type: "trueFalse", question: "本文的主旨是勸誡人們要勤奮刻苦地學習。",
+                answer: true,
+                explanation: "文章的核心目的正是勸導讀者要勤奮學習，因為學習對於人的成長和品德養成至關重要。"
+            },
+            {
+                id: "tf23", type: "trueFalse", question: "「舍君子而為小人」中的「而」字表示轉折關係。",
+                answer: false,
+                explanation: "此處的「而」表示並列或遞進關係，強調失去君子品德並成為小人，而非轉折。"
+            },
+            {
+                id: "tf24", type: "trueFalse", question: "這篇文章的標題是《勸學》。",
+                answer: false,
+                explanation: "文章標題是《歐陽修誨學》。"
+            },
+            {
+                id: "tf25", type: "trueFalse", question: "本文的核心論點是，學習是區分君子和小人的根本標準。",
+                answer: true,
+                explanation: "文中明確指出「不學，則舍君子而為小人」，表明學習是決定一個人成為君子或小人的關鍵因素。"
+            }
+        ];
+
+
+        // Stores selected option for each question: {questionId: optionElement}
+        let selectedOptions = {};
+
+        const originalTextDiv = document.getElementById('original-text');
+        const analysisAreaDiv = document.getElementById('analysis-area');
+        const gameAreaDiv = document.getElementById('game-area');
+        
+        // To store the last clicked sentence for LLM (for Cantonese reading)
+        let currentSentenceForLLM = '';
+
+        /**
+         * 初始化原文顯示區
+         * 將每句話包裝在可點擊的 span 中
+         */
+        function initializeOriginalText() {
+            originalTextDiv.innerHTML = ''; // 清空內容
+            textData.forEach((data, index) => {
+                const sentenceSpan = document.createElement('span');
+                sentenceSpan.classList.add('sentence-span');
+                sentenceSpan.textContent = data.sentence;
+                sentenceSpan.dataset.index = index; // 存儲索引以便查找
+                sentenceSpan.addEventListener('click', () => displaySentenceAnalysis(index));
+                originalTextDiv.appendChild(sentenceSpan);
+                // originalTextDiv.appendChild(document.createTextNode(' ')); // 每個句子後添加空格
+            });
+        }
+
+        /**
+         * 顯示指定索引句子的分析內容
+         * @param {number} index 句子的索引
+         */
+        function displaySentenceAnalysis(index) {
+            const data = textData[index];
+            if (!data) {
+                analysisAreaDiv.innerHTML = '<p class="text-center text-gray-500 italic mt-8">未找到該句的分析。</p>';
+                return;
+            }
+
+            currentSentenceForLLM = data.sentence; // Store the current sentence for LLM functions
+
+            // 移除所有活躍狀態
+            document.querySelectorAll('.sentence-span').forEach(span => {
+                span.classList.remove('active');
+            });
+            // 添加活躍狀態到當前點擊的句子
+            document.querySelector(`.sentence-span[data-index="${index}"]`).classList.add('active');
+
+            let htmlContent = `
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">${data.sentence}</h3>
+                <div class="mb-4">
+                    <p class="font-medium text-indigo-500 mb-1"><i class="fas fa-language mr-1"></i> 白話翻譯：</p>
+                    <p class="text-gray-700">${data.translation}</p>
+                </div>
+                <div class="mb-4">
+                    <p class="font-medium text-indigo-500 mb-1"><i class="fas fa-lightbulb mr-1"></i> 詞語解釋：</p>
+                    <ul class="list-disc list-inside text-gray-700 space-y-1">
+                        ${data.words.map(w => `<li><span class="font-semibold">${w.word}：</span>${w.explanation}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="mb-4">
+                    <p class="font-medium text-indigo-500 mb-1"><i class="fas fa-pencil-alt mr-1"></i> 修辭與語法：</p>
+                    <p class="text-gray-700">${data.rhetoric || '無'}</p>
+                </div>
+                <div class="mb-4">
+                    <p class="font-medium text-indigo-500 mb-1"><i class="fas fa-info-circle mr-1"></i> 重點分析：</p>
+                    <p class="text-gray-700">${data.analysis}</p>
+                </div>
+
+                <div class="mt-6 border-t pt-4 border-gray-200">
+                    <button id="read-aloud-btn" class="game-button w-full mb-2">🔊 廣東話朗讀</button>
+                </div>
+            `;
+            analysisAreaDiv.innerHTML = htmlContent;
+
+            // Attach event listener to the new read aloud button
+            document.getElementById('read-aloud-btn').addEventListener('click', () => readSentenceAloud(currentSentenceForLLM));
+        }
+
+        /**
+         * 廣東話朗讀句子功能
+         * @param {string} text 要朗讀的文字
+         */
+        function readSentenceAloud(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                let foundVoice = false;
+
+                // 嘗試尋找廣東話語音 (zh-HK 或 yue-HK)
+                const voices = speechSynthesis.getVoices();
+                for (const voice of voices) {
+                    if (voice.lang === 'zh-HK' || voice.lang.toLowerCase() === 'yue-hk' || voice.name.includes('Cantonese') || voice.name.includes('Hong Kong')) {
+                        utterance.voice = voice;
+                        foundVoice = true;
+                        console.log('Found Cantonese voice:', voice.name);
+                        break;
+                    }
+                }
+
+                // 如果沒有找到特定的廣東話語音，則嘗試中文或普通話語音作為備用
+                if (!foundVoice) {
+                    for (const voice of voices) {
+                        if (voice.lang.startsWith('zh-') || voice.name.includes('Chinese')) {
+                            utterance.voice = voice;
+                            foundVoice = true;
+                            console.log('Using fallback Chinese voice:', voice.name);
+                            break;
+                        }
+                    }
+                }
+                
+                // 如果依然沒有找到，則使用瀏覽器預設語音
+                if (!foundVoice) {
+                    console.log('Using default voice as no Chinese/Cantonese voice found.');
+                }
+
+                utterance.rate = 0.8; // 調整語速 (0.1 到 10)
+                utterance.pitch = 1;  // 調整音高 (0 到 2)
+
+                utterance.onend = () => {
+                    // 朗讀結束後可以執行一些操作，例如啟用按鈕
+                    console.log('語音朗讀結束');
+                };
+
+                utterance.onerror = (event) => {
+                    console.error('語音合成錯誤:', event.error);
+                    showMessage('朗讀失敗', '無法朗讀此句子，您的瀏覽器可能不支援廣東話語音或語音服務發生錯誤。錯誤訊息: ' + event.error);
+                };
+
+                speechSynthesis.speak(utterance);
+            } else {
+                showMessage('瀏覽器不支援', '您的瀏覽器不支援語音朗讀功能。請嘗試更新瀏覽器或使用其他瀏覽器。');
+            }
+        }
+
+
+        /**
+         * 顯示遊戲類型選擇按鈕
+         */
+        function displayGameTypeSelection() {
+            gameAreaDiv.innerHTML = ''; // 清空遊戲區
+
+            const gameTypeButtonsContainer = document.createElement('div');
+            // Adjusted grid for game type buttons for better responsive layout
+            gameTypeButtonsContainer.classList.add('grid', 'grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-5', 'gap-4', 'mt-4');
+
+            const gameTypes = [
+                { key: "wordMatch", title: "詞義連線" },
+                { key: "sentenceReorder", title: "句子排序" },
+                { key: "multipleChoice", title: "文意選擇題" },
+                { key: "pairing", title: "詞語配對" },
+                { key: "trueFalse", title: "是非題" }
+            ];
+
+            gameTypes.forEach(typeInfo => {
+                const button = document.createElement('button');
+                button.classList.add('game-type-button');
+                button.textContent = typeInfo.title;
+                button.dataset.gameTypeKey = typeInfo.key;
+                button.addEventListener('click', () => renderQuestionsForType(typeInfo.key, typeInfo.title));
+                gameTypeButtonsContainer.appendChild(button);
+            });
+            gameAreaDiv.appendChild(gameTypeButtonsContainer);
+        }
+
+        /**
+         * 渲染特定遊戲類型的題目
+         * @param {string} selectedGameTypeKey 要顯示的遊戲類型鍵
+         * @param {string} selectedGameTypeTitle 要顯示的遊戲類型標題
+         */
+        function renderQuestionsForType(selectedGameTypeKey, selectedGameTypeTitle) {
+            gameAreaDiv.innerHTML = ''; // 清空遊戲區
+
+            // 返回按鈕
+            const backButton = document.createElement('button');
+            backButton.classList.add('game-button', 'mb-4', 'w-full', 'md:w-auto', 'mx-auto', 'block'); // Adjusted for full width on small and auto on md+
+            backButton.textContent = '返回遊戲選單';
+            backButton.addEventListener('click', displayGameTypeSelection);
+            gameAreaDiv.appendChild(backButton);
+
+            const typeSection = document.createElement('div');
+            typeSection.id = `game-section-${selectedGameTypeKey}`;
+            typeSection.classList.add('mb-8', 'p-4', 'bg-blue-50', 'rounded-xl', 'shadow-md');
+
+            const sectionHeader = document.createElement('h3');
+            sectionHeader.classList.add('text-xl', 'font-bold', 'text-blue-700', 'mb-4', 'pb-2', 'border-b-2', 'border-blue-200');
+            sectionHeader.textContent = selectedGameTypeTitle;
+            typeSection.appendChild(sectionHeader);
+
+            const questionsOfType = gameData.filter(q => q.type === selectedGameTypeKey);
+            // 隨機打亂當前遊戲類型的題目順序
+            questionsOfType.sort(() => Math.random() - 0.5);
+
+            questionsOfType.forEach((question, index) => {
+                const questionCard = document.createElement('div');
+                questionCard.id = `question-${question.id}`; // Use unique ID for each question
+                questionCard.classList.add('game-card', 'mb-4', 'border', 'border-gray-200', 'p-4');
+
+                const questionText = document.createElement('p');
+                questionText.classList.add('text-lg', 'font-semibold', 'text-gray-800', 'mb-3');
+                questionText.textContent = `${index + 1}. ${question.question}`;
+                questionCard.appendChild(questionText);
+
+                const optionsContainer = document.createElement('div');
+                optionsContainer.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-2', 'mb-4');
+
+                // Conditionally render options based on question type
+                if (question.type === "trueFalse") {
+                    const trueBtn = document.createElement('button');
+                    trueBtn.classList.add('game-button', 'text-left', 'w-full');
+                    trueBtn.textContent = '是';
+                    trueBtn.dataset.questionId = question.id;
+                    trueBtn.dataset.value = true; // Store boolean value for true/false check
+                    trueBtn.addEventListener('click', (e) => handleOptionClick(e.target, question));
+                    optionsContainer.appendChild(trueBtn);
+
+                    const falseBtn = document.createElement('button');
+                    falseBtn.classList.add('game-button', 'text-left', 'w-full');
+                    falseBtn.textContent = '非';
+                    falseBtn.dataset.questionId = question.id;
+                    falseBtn.dataset.value = false; // Store boolean value for true/false check
+                    falseBtn.addEventListener('click', (e) => handleOptionClick(e.target, question));
+                    optionsContainer.appendChild(falseBtn);
+                } else {
+                    // 對選項進行隨機排序
+                    const shuffledOptions = [...question.options].sort(() => Math.random() - 0.5);
+                    shuffledOptions.forEach((option, optIndex) => {
+                        const button = document.createElement('button');
+                        button.classList.add('game-button', 'text-left', 'w-full');
+                        button.textContent = option.text;
+                        button.dataset.questionId = question.id;
+                        button.dataset.optionIndex = optIndex; // Store original index (optional, but good for debugging)
+                        button.dataset.isCorrect = option.isCorrect; // This is only relevant for multi-choice/word match
+                        button.addEventListener('click', (e) => handleOptionClick(e.target, question));
+                        optionsContainer.appendChild(button);
+                    });
+                }
+                questionCard.appendChild(optionsContainer);
+
+                // Add check answer button
+                const checkAnswerBtn = document.createElement('button');
+                checkAnswerBtn.id = `check-btn-${question.id}`;
+                checkAnswerBtn.classList.add('game-button', 'w-full', 'mt-2', 'md:w-auto', 'mx-auto', 'block');
+                checkAnswerBtn.textContent = '檢查答案';
+                checkAnswerBtn.dataset.questionId = question.id;
+                checkAnswerBtn.disabled = true; // Disable until an option is selected
+                checkAnswerBtn.addEventListener('click', () => checkAnswer(question));
+                questionCard.appendChild(checkAnswerBtn);
+
+                // Add feedback area (initially hidden)
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.id = `feedback-${question.id}`;
+                feedbackDiv.classList.add('mt-4', 'p-3', 'rounded-lg', 'text-sm', 'hidden');
+                questionCard.appendChild(feedbackDiv);
+
+                // Add continue button (initially hidden)
+                const continueBtn = document.getElementById(`continue-btn-${question.id}`);
+                if (continueBtn) {
+                     continueBtn.classList.add('hidden'); // Ensure it's hidden if it exists from previous state
+                } else {
+                    const newContinueBtn = document.createElement('button');
+                    newContinueBtn.id = `continue-btn-${question.id}`;
+                    newContinueBtn.classList.add('game-button', 'w-full', 'mt-2', 'hidden', 'md:w-auto', 'mx-auto', 'block');
+                    newContinueBtn.textContent = '繼續';
+                    newContinueBtn.addEventListener('click', () => hideFeedback(question.id));
+                    questionCard.appendChild(newContinueBtn);
+                }
+               
+                typeSection.appendChild(questionCard);
+            });
+            gameAreaDiv.appendChild(typeSection);
+        }
+
+
+        /**
+         * 處理選項點擊事件
+         * @param {HTMLElement} clickedButton 被點擊的按鈕
+         * @param {object} question 該問題的數據對象
+         */
+        function handleOptionClick(clickedButton, question) {
+            const questionId = question.id;
+            const optionsContainer = clickedButton.parentNode;
+            const options = Array.from(optionsContainer.children);
+
+            // 移除所有選項的 'selected' 狀態
+            options.forEach(btn => btn.classList.remove('selected'));
+
+            // 為被點擊的按鈕添加 'selected' 狀態
+            clickedButton.classList.add('selected');
+            selectedOptions[questionId] = clickedButton; // 儲存選中的選項元素
+
+            // 啟用該問題的檢查答案按鈕
+            document.getElementById(`check-btn-${questionId}`).disabled = false;
+        }
+
+        /**
+         * 檢查答案並顯示反饋
+         * @param {object} question 該問題的數據對象
+         */
+        function checkAnswer(question) {
+            const questionId = question.id;
+            const selectedOptionButton = selectedOptions[questionId];
+            const feedbackDiv = document.getElementById(`feedback-${questionId}`);
+            const checkAnswerBtn = document.getElementById(`check-btn-${questionId}`);
+            const continueBtn = document.getElementById(`continue-btn-${questionId}`);
+            const questionCard = document.getElementById(`question-${questionId}`);
+            const options = Array.from(questionCard.querySelectorAll('.game-button[data-question-id="'+questionId+'"]'));
+
+
+            if (!selectedOptionButton) {
+                showMessage('請選擇一個答案', '請先點擊一個選項才能檢查答案。');
+                return;
+            }
+
+            // 禁用所有選項和檢查答案按鈕
+            options.forEach(btn => btn.disabled = true);
+            checkAnswerBtn.disabled = true;
+
+            let isCorrect = false;
+            let correctAnswerText = '';
+            let explanationText = question.explanation || '無詳細解釋。';
+
+            // 判斷題型的正確性
+            if (question.type === "trueFalse") {
+                const selectedValue = selectedOptionButton.dataset.value === 'true';
+                isCorrect = (selectedValue === question.answer);
+                correctAnswerText = question.answer ? '是' : '非'; // 更新答案顯示
+            } else {
+                const correctOption = question.options.find(opt => opt.isCorrect);
+                isCorrect = (selectedOptionButton.dataset.isCorrect === 'true');
+                if (correctOption) {
+                    correctAnswerText = correctOption.text;
+                }
+            }
+
+            // 顯示反饋
+            if (isCorrect) {
+                selectedOptionButton.classList.remove('selected');
+                selectedOptionButton.classList.add('correct');
+                feedbackDiv.classList.remove('bg-red-100', 'text-red-800', 'bg-red-50', 'text-red-700'); // Remove red background classes
+                feedbackDiv.classList.add('bg-green-100', 'text-green-800'); // Add green background classes
+                feedbackDiv.innerHTML = '<p class="font-bold">✓ 回答正確！</p>';
+            } else {
+                selectedOptionButton.classList.remove('selected');
+                selectedOptionButton.classList.add('incorrect');
+                feedbackDiv.classList.remove('bg-green-100', 'text-green-800', 'bg-green-50', 'text-green-700'); // Remove green background classes
+                feedbackDiv.classList.add('bg-red-100', 'text-red-800'); // Add red background classes
+                feedbackDiv.innerHTML = `
+                    <p class="font-bold">✗ 回答錯誤！</p>
+                    <p>正確答案是：<span class="font-semibold">${correctAnswerText}</span></p>
+                    <p>${explanationText}</p>
+                `;
+                // 標記正確答案
+                options.forEach(btn => {
+                    if (question.type === "trueFalse") {
+                        if ((question.answer && btn.textContent === '是') || (!question.answer && btn.textContent === '非')) { // 更新標記邏輯
+                            btn.classList.add('correct');
+                        }
+                    } else {
+                        if (btn.dataset.isCorrect === 'true') {
+                            btn.classList.add('correct');
+                        }
+                    }
+                });
+            }
+            feedbackDiv.classList.remove('hidden');
+            continueBtn.classList.remove('hidden');
+        }
+
+        /**
+         * 隱藏反饋區域並重置問題按鈕狀態（使其無法再次作答）
+         * @param {string} questionId 問題的ID
+         */
+        function hideFeedback(questionId) {
+            const feedbackDiv = document.getElementById(`feedback-${questionId}`);
+            const continueBtn = document.getElementById(`continue-btn-${questionId}`);
+            const questionCard = document.getElementById(`question-${questionId}`);
+            const options = Array.from(questionCard.querySelectorAll('.game-button[data-question-id="'+questionId+'"]'));
+
+            feedbackDiv.classList.add('hidden');
+            continueBtn.classList.add('hidden');
+
+            // 清除選中和顏色狀態，但保持禁用狀態以防止重複作答
+            options.forEach(btn => {
+                btn.classList.remove('selected', 'correct', 'incorrect');
+                btn.disabled = true; // 保持禁用，表示已作答
+            });
+            delete selectedOptions[questionId]; // 從已選中答案中移除
+        }
+
+        /**
+         * 重置遊戲狀態，回到遊戲類型選擇畫面
+         */
+        function resetGame() {
+            // 隨機打亂遊戲題目順序 (確保每次遊戲題目順序不同)
+            gameData.sort(() => Math.random() - 0.5);
+            displayGameTypeSelection(); // 顯示遊戲類型選擇按鈕
+        }
+
+        // 頁面加載完成後初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeOriginalText();
+            // 初始顯示遊戲類型選擇按鈕
+            displayGameTypeSelection();
+            // 強制隱藏模態框：再次在 DOMContentLoaded 中確保它是隱藏的
+            messageModal.style.display = 'none';
+        });
+
+    </script>
+</body>
+</html>
